@@ -22,8 +22,10 @@ public class SecurityConfig {
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
                 http
-                                // 🔒 Authorize all requests — require authentication for any endpoint
+                                // 🔒 Authorize requests — require authentication for any endpoint except
+                                // h2-console
                                 .authorizeHttpRequests(authorize -> authorize
+                                                .requestMatchers("/h2-console/**").permitAll()
                                                 .anyRequest().authenticated())
 
                                 // 🧾 Enable default login form
@@ -33,7 +35,10 @@ public class SecurityConfig {
                                 .httpBasic(withDefaults())
 
                                 // 🚫 Disable CSRF for simplicity (optional, depending on app type)
-                                .csrf(csrf -> csrf.disable());
+                                .csrf(csrf -> csrf.disable())
+
+                                // Enable frame options to allow h2-console
+                                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
                 return http.build();
         }
