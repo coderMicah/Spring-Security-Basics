@@ -8,36 +8,45 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+// 🧩 JdbcUserDetailsManager allows loading and saving users directly in a database
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 import static org.springframework.security.config.Customizer.withDefaults;
+
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
+        @Autowired
+        DataSource dataSource; // 💾 Inject the configured DataSource (connected to your DB)
+
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
                 http
-                                // 🔒 Authorize requests — require authentication for any endpoint except
-                                // h2-console
+                                // 🔒 Secure all endpoints except the H2 console
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .requestMatchers("/h2-console/**").permitAll()
                                                 .anyRequest().authenticated())
 
-                                // 🧾 Enable default login form
+                                // 🧾 Use Spring Security’s default login form
                                 .formLogin(withDefaults())
 
-                                // 🔐 Enable HTTP Basic authentication (for tools like Postman)
+                                // 🔐 Enable basic authentication (useful for Postman testing)
                                 .httpBasic(withDefaults())
 
-                                // 🚫 Disable CSRF for simplicity (optional, depending on app type)
+                                // ⚠️ Disable CSRF only for development/testing (not recommended in production)
                                 .csrf(csrf -> csrf.disable())
 
-                                // Enable frame options to allow h2-console
+                                // 🪟 Allow framing for H2 console
                                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
                 return http.build();
@@ -45,20 +54,45 @@ public class SecurityConfig {
 
         @Bean
         public UserDetailsService userDetailsService() {
-                // 👤 Normal User
+
+                // 👤 Step 1: Define a normal user
                 UserDetails normalUser = User.withUsername("user")
-                                .password("{noop}user123") // {noop} means no password encoder
+                                .password(passwordEncoder().encode("user123"))
                                 .roles("USER")
                                 .build();
 
-                // 👑 Admin User
+                // 👑 Step 2: Define an admin user
                 UserDetails adminUser = User.withUsername("admin")
-                                .password("{noop}admin123")
+                                .password(passwordEncoder().encode("admin123"))
                                 .roles("ADMIN")
                                 .build();
 
-                // ✅ Register both users in memory
-                return new InMemoryUserDetailsManager(normalUser, adminUser);
+                // ⚙️ Step 3: Previously, we used InMemoryUserDetailsManager to store users in
+                // memory
+                // return new InMemoryUserDetailsManager(normalUser, adminUser);
+
+                // 💾 Step 4: Now we switch to JdbcUserDetailsManager to persist users in a
+                // database
+                JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
+
+                // ✅ Step 5: Create (insert) the defined users into the DB if they don’t exist
+                // yet
+                // Note: JdbcUserDetailsManager expects tables like `users` and `authorities` in
+                // your DB
+                if (!jdbcUserDetailsManager.userExists("admin")) {
+                        jdbcUserDetailsManager.createUser(adminUser);
+                }
+                if (!jdbcUserDetailsManager.userExists("user")) {
+                        jdbcUserDetailsManager.createUser(normalUser);
+                }
+
+                // 🧩 Step 6: Return the JDBC-based user manager as the UserDetailsService
+                return jdbcUserDetailsManager;
+        }
+
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
         }
 
 }
