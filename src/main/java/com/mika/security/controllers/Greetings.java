@@ -1,4 +1,4 @@
-package com.mika.security;
+package com.mika.security.controllers;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,4 +23,5 @@ public class Greetings {
     public String getAdminMessage() {
         return "Hello, Admin";
     }
+
 }
