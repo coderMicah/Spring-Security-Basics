@@ -20,9 +20,9 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Component
-public class JwtUtilis {
+public class JwtUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(JwtUtilis.class);
+    private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
     @Value("${spring.app.jwtSecret}")
     private String jwtSecret;
