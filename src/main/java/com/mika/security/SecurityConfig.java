@@ -2,6 +2,7 @@ package com.mika.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -14,44 +15,45 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http
-                // 🔒 Authorize all requests — require authentication for any endpoint
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated())
+                http
+                                // 🔒 Authorize all requests — require authentication for any endpoint
+                                .authorizeHttpRequests(authorize -> authorize
+                                                .anyRequest().authenticated())
 
-                // 🧾 Enable default login form
-                .formLogin(withDefaults())
+                                // 🧾 Enable default login form
+                                .formLogin(withDefaults())
 
-                // 🔐 Enable HTTP Basic authentication (for tools like Postman)
-                .httpBasic(withDefaults())
+                                // 🔐 Enable HTTP Basic authentication (for tools like Postman)
+                                .httpBasic(withDefaults())
 
-                // 🚫 Disable CSRF for simplicity (optional, depending on app type)
-                .csrf(csrf -> csrf.disable());
+                                // 🚫 Disable CSRF for simplicity (optional, depending on app type)
+                                .csrf(csrf -> csrf.disable());
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        // 👤 Normal User
-        UserDetails normalUser = User.withUsername("user")
-                .password("{noop}user123") // {noop} means no password encoder
-                .roles("USER")
-                .build();
+        @Bean
+        public UserDetailsService userDetailsService() {
+                // 👤 Normal User
+                UserDetails normalUser = User.withUsername("user")
+                                .password("{noop}user123") // {noop} means no password encoder
+                                .roles("USER")
+                                .build();
 
-        // 👑 Admin User
-        UserDetails adminUser = User.withUsername("admin")
-                .password("{noop}admin123")
-                .roles("ADMIN")
-                .build();
+                // 👑 Admin User
+                UserDetails adminUser = User.withUsername("admin")
+                                .password("{noop}admin123")
+                                .roles("ADMIN")
+                                .build();
 
-        // ✅ Register both users in memory
-        return new InMemoryUserDetailsManager(normalUser, adminUser);
-    }
+                // ✅ Register both users in memory
+                return new InMemoryUserDetailsManager(normalUser, adminUser);
+        }
 
 }
